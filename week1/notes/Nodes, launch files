@@ -157,3 +157,582 @@ you see the robot's whole team working together.
 That is why extra nodes appear in:
 
     ros2 node list
+
+# ROS 2, Gazebo, Plugins, Topics, Publishers, Subscribers, and Bridges
+
+## Why I Wrote These Notes
+
+While following Tom Howard's ROS 2 course, I noticed that my RQT graph looked different from the tutorial.
+
+The tutorial showed:
+
+```text
+/teleop_keyboard
+      |
+      v
+   /cmd_vel
+      |
+      v
+ /ros_gz_bridge
+      |
+      +--> /scan
+      +--> /imu
+      +--> /joint_states
+      +--> /odom
+```
+
+My setup showed:
+
+```text
+/teleop_keyboard --> /cmd_vel --> /turtlebot3_diff_drive
+/turtlebot3_laserscan --> /scan
+/turtlebot3_imu --> /imu
+/turtlebot3_joint_state --> /joint_states
+```
+
+This led to an important question:
+
+> Why is my setup different even though I followed the tutorial?
+
+To answer that, we first need to understand some ROS fundamentals.
+
+---
+
+# 1. What is a Node?
+
+A node is a running ROS program.
+
+Examples:
+
+```text
+/teleop_keyboard
+/robot_state_publisher
+/turtlebot3_laserscan
+```
+
+Each node performs one specific task.
+
+Examples:
+
+| Node                  | Responsibility           |
+| --------------------- | ------------------------ |
+| teleop_keyboard       | Read keyboard input      |
+| robot_state_publisher | Publish robot transforms |
+| turtlebot3_laserscan  | Publish LiDAR data       |
+| turtlebot3_imu        | Publish IMU data         |
+
+Think of a node as a worker in a company.
+
+Each worker has one job.
+
+---
+
+# 2. What is a Topic?
+
+Nodes need a way to communicate.
+
+ROS uses Topics.
+
+A topic is like a radio channel.
+
+Example:
+
+```text
+/cmd_vel
+```
+
+means:
+
+"Velocity Command"
+
+A node can broadcast messages on this channel and other nodes can listen.
+
+Example:
+
+```text
+teleop_keyboard
+      |
+      v
+   /cmd_vel
+      |
+      v
+turtlebot3_diff_drive
+```
+
+The keyboard node sends movement commands.
+
+The drive controller receives them.
+
+---
+
+# 3. What is Publishing?
+
+Publishing means:
+
+> Sending data onto a topic.
+
+Example:
+
+```text
+teleop_keyboard
+```
+
+publishes:
+
+```text
+/cmd_vel
+```
+
+When you press:
+
+```text
+W
+```
+
+it publishes:
+
+```text
+Move forward
+```
+
+When you press:
+
+```text
+A
+```
+
+it publishes:
+
+```text
+Turn left
+```
+
+---
+
+# 4. What is Subscribing?
+
+Subscribing means:
+
+> Listening to data from a topic.
+
+Example:
+
+```text
+turtlebot3_diff_drive
+```
+
+subscribes to:
+
+```text
+/cmd_vel
+```
+
+It listens for movement commands.
+
+Whenever a message arrives, it moves the wheels.
+
+---
+
+# 5. Publisher-Subscriber Relationship
+
+Example:
+
+```text
+Publisher
+    |
+    v
+/cmd_vel
+    |
+    v
+Subscriber
+```
+
+More specifically:
+
+```text
+teleop_keyboard
+       |
+       v
+    /cmd_vel
+       |
+       v
+turtlebot3_diff_drive
+```
+
+Publisher:
+
+```text
+teleop_keyboard
+```
+
+Topic:
+
+```text
+/cmd_vel
+```
+
+Subscriber:
+
+```text
+turtlebot3_diff_drive
+```
+
+---
+
+# 6. What is a Plugin?
+
+A plugin is an add-on module that gives extra functionality.
+Gazebo-ros plugin means communication between gazebo simulation and ros ;just like what bridge does 
+
+Think of a robot model.
+
+Without plugins:
+
+```text
+Robot exists
+```
+
+With plugins:
+
+```text
+Robot can move
+Robot can publish IMU data
+Robot can publish LiDAR data
+Robot can publish wheel states
+```
+
+In Gazebo, plugins are usually compiled C++ libraries.
+
+Example:
+
+```xml
+<plugin
+    name="turtlebot3_diff_drive"
+    filename="libgazebo_ros_diff_drive.so">
+```
+
+This plugin:
+
+```text
+Reads wheel commands
+Moves wheels
+Publishes odometry
+Creates ROS interfaces
+```
+
+---
+
+# 7. What Happens When Gazebo Loads a Plugin?
+
+When Gazebo sees:
+
+```xml
+<plugin name="turtlebot3_laserscan" ...>
+```
+
+it loads:
+
+```text
+libgazebo_ros_ray_sensor.so
+```
+
+That plugin starts working and creates:
+
+```text
+/turtlebot3_laserscan
+```
+
+which publishes:
+
+```text
+/scan
+```
+
+The same happens for:
+
+```text
+/turtlebot3_imu
+/turtlebot3_joint_state
+/turtlebot3_diff_drive
+```
+
+---
+
+# 8. Plugin-Based Architecture
+
+My TurtleBot3 setup uses plugins.
+
+Architecture:
+
+```text
+Gazebo
+   |
+   v
+Gazebo ROS Plugin
+   |
+   v
+ROS Topic
+```
+
+Example:
+
+```text
+Gazebo
+   |
+   v
+libgazebo_ros_ray_sensor.so
+   |
+   v
+/scan
+```
+
+No bridge is required.
+
+Advantages:
+
+* Simpler
+* Faster
+* Fewer processes
+* Common in Gazebo Classic
+
+---
+
+# 9. What is a Bridge?
+
+A bridge is a translator.
+
+Imagine:
+
+```text
+ROS 2 speaks English
+Gazebo speaks Japanese
+```
+
+The bridge translates.
+
+Architecture:
+
+```text
+Gazebo
+   |
+   v
+Bridge
+   |
+   v
+ROS
+```
+
+Example:
+
+```text
+Gazebo Laser
+      |
+      v
+ros_gz_bridge
+      |
+      v
+ROS LaserScan
+```
+
+---
+
+# 10. Bridge-Based Architecture
+
+Architecture:
+
+```text
+Gazebo Topic
+      |
+      v
+ros_gz_bridge
+      |
+      v
+ROS Topic
+```
+
+Example:
+
+```text
+Gazebo
+      |
+      v
+Laser Topic
+      |
+      v
+ros_gz_bridge
+      |
+      v
+/scan
+```
+
+Advantages:
+
+* Cleaner separation
+* Modern Gazebo architecture
+* Works with Gazebo Sim (Ignition)
+
+---
+
+# 11. Why Does the Tutorial Show ros_gz_bridge?
+
+The tutorial likely uses:
+
+```text
+Gazebo Sim (Ignition)
+```
+
+which communicates through Gazebo Transport messages.
+
+ROS 2 cannot directly understand those messages.
+
+Therefore:
+
+```text
+ros_gz_bridge
+```
+
+is required.
+
+The bridge translates:
+
+```text
+Gazebo Message
+      ↔
+ROS Message
+```
+
+---
+
+# 12. Why Is My Setup Different?
+
+Even though I followed the tutorial, I installed and ran TurtleBot3 using:
+
+```text
+turtlebot3_gazebo
+```
+
+which uses Gazebo ROS plugins.
+
+The TurtleBot3 Burger model contains:
+
+```xml
+libgazebo_ros_diff_drive.so
+libgazebo_ros_imu_sensor.so
+libgazebo_ros_ray_sensor.so
+libgazebo_ros_joint_state_publisher.so
+```
+
+These plugins already connect Gazebo directly to ROS.
+
+Therefore:
+
+```text
+No ros_gz_bridge is needed
+```
+
+My setup is:
+
+```text
+Plugin-Based
+```
+
+The tutorial example is:
+
+```text
+Bridge-Based
+```
+
+Both are valid.
+
+---
+
+# 13. How Can I Tell Which Architecture I Am Using?
+
+If RQT shows:
+
+```text
+/ros_gz_bridge
+```
+
+you are using:
+
+```text
+Bridge Architecture
+```
+
+If RQT shows:
+
+```text
+/turtlebot3_laserscan
+/turtlebot3_imu
+/turtlebot3_diff_drive
+```
+
+you are using:
+
+```text
+Plugin Architecture
+```
+
+---
+
+# 14. How Can I Switch To Bridge Architecture?
+
+Current:
+
+```text
+Gazebo Classic
++
+Gazebo ROS Plugins
+```
+
+To use bridge architecture, I would need:
+
+1. Gazebo Sim (Ignition)
+2. ros_gz packages
+3. ros_gz_bridge
+4. Launch files configured for Gazebo Sim
+
+Typical bridge command:
+
+```bash
+ros2 run ros_gz_bridge parameter_bridge
+```
+
+with specific topics configured.
+
+This is not usually done by editing TurtleBot3 plugin files.
+
+Instead, it involves changing the entire simulation stack.
+
+---
+
+# Final Summary
+
+Plugin Architecture:
+
+```text
+Gazebo
+   |
+Plugin
+   |
+ROS Topic
+```
+
+Bridge Architecture:
+
+```text
+Gazebo
+   |
+Bridge
+   |
+ROS Topic
+```
+
+My TurtleBot3 setup uses plugins because the TurtleBot3 Burger model contains Gazebo ROS plugins.
+
+The tutorial screenshot uses a bridge-based setup, likely based on Gazebo Sim.
+
+Both approaches achieve the same goal:
+
+Getting data between Gazebo and ROS.
