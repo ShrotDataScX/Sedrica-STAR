@@ -1,0 +1,159 @@
+=========================================================
+DOUBT : WHY DO EXTRA NODES APPEAR IN ros2 node list?
+=========================================================
+
+DOUBT
+-----
+
+The tutorial shows only a few nodes:
+
+    /robot_state_publisher
+    /teleop_keyboard
+
+But when I run:
+
+    ros2 node list
+
+I see:
+
+    /gazebo
+    /robot_state_publisher
+    /teleop_keyboard
+    /turtlebot3_diff_drive
+    /turtlebot3_imu
+    /turtlebot3_joint_state
+    /turtlebot3_laserscan
+
+Why are these extra nodes appearing?
+Is something wrong with my setup?
+
+
+EXPLANATION
+-----------
+
+Nothing is wrong.
+
+The TurtleBot3 simulation loads additional plugins and sensors
+that automatically create extra ROS2 nodes.
+
+The tutorial only showed the most important nodes and did not
+show every node running in the system.
+
+The additional nodes are:
+
+1. /turtlebot3_diff_drive
+
+   Purpose:
+   - Controls the robot wheels.
+   - Receives velocity commands from the topic:
+
+         /cmd_vel
+
+   - Converts those commands into wheel movement.
+
+---------------------------------------------------------
+
+2. /turtlebot3_imu
+
+   Purpose:
+   - Simulates the IMU (Inertial Measurement Unit).
+   - Publishes orientation and acceleration data.
+
+---------------------------------------------------------
+
+3. /turtlebot3_joint_state
+
+   Purpose:
+   - Publishes the state of the wheel joints.
+   - Tells ROS how the wheels are rotating.
+
+---------------------------------------------------------
+
+4. /turtlebot3_laserscan
+
+   Purpose:
+   - Simulates the LiDAR sensor.
+   - Publishes distance measurements of the surroundings.
+
+---------------------------------------------------------
+
+5. /gazebo
+
+   Purpose:
+   - The Gazebo simulation server itself.
+   - Responsible for running the physics simulation.
+
+---------------------------------------------------------
+
+HOW THESE NODES ARE CREATED
+---------------------------
+
+The launch file:
+
+    empty_world.launch.py
+
+does NOT directly contain the code for these nodes.
+
+Instead:
+
+    empty_world.launch.py
+            ↓
+    spawn_turtlebot3.launch.py
+            ↓
+    TurtleBot3 Burger Model (SDF)
+            ↓
+    Gazebo Plugins
+            ↓
+    ROS2 Nodes
+
+Inside the Burger model file there are plugin definitions such as:
+
+    <plugin name="turtlebot3_diff_drive" ...>
+    <plugin name="turtlebot3_imu" ...>
+    <plugin name="turtlebot3_laserscan" ...>
+    <plugin name="turtlebot3_joint_state" ...>
+
+When Gazebo loads the robot model, these plugins are loaded
+automatically and create the corresponding ROS2 nodes because these nodes are coded in turtlebot3_simulations in model/burger; that means these nodes will load whenever we spawn robot. 
+
+---------------------------------------------------------
+
+IMPORTANT CONCLUSION
+--------------------
+
+More nodes than the tutorial shows does NOT mean there is an error.
+
+It simply means the TurtleBot3 simulation is loading additional
+controllers and sensors.
+
+As long as:
+
+    /robot_state_publisher
+    /teleop_keyboard
+
+are present and the robot can move correctly, your setup is working
+as expected.
+
+=========================================================
+CHILD-LIKE EXPLANATION
+=========================================================
+
+Think of the launch file as a command:
+
+    "Bring the robot into the room."
+
+When the robot enters the room, it brings:
+
+    - Wheels
+    - LiDAR
+    - IMU
+    - Joint sensors
+
+Each of these creates its own helper node.
+
+So instead of seeing only two people in the room,
+you see the robot's whole team working together.
+
+That is why extra nodes appear in:
+
+    ros2 node list
