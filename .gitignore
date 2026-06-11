@@ -1,7 +1,7 @@
 # ROS 2 generated build artifacts
-ros2_ws/build/
-ros2_ws/install/
-ros2_ws/log/
+week1/ros2_ws/build/
+week1/ros2_ws/install/
+week1/ros2_ws/log/
 
 # Python cache
 __pycache__/
