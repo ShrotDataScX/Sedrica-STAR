@@ -9,3 +9,6 @@ __pycache__/
 
 # Editor / OS files
 .vscode/
+
+# External course repo
+week1/ros2_ws/src/tuos_ros/
