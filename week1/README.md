@@ -32,7 +32,7 @@
     Didn't get much time today as I was doing assignment for Summer of Robotics which  was all related stuff and problems were mostly related to transformation        matrices and associated algebra.
 
 
-## Day 3,4,5 Colletive Progress
+## Day 3,4,5 Collective Progress
 - The TF2 Transformation System
 - RViz: Visualising the Robot’s World
 - Workspace & Package Architecture
