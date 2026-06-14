@@ -18,6 +18,7 @@ class Square(Node):
 
         self.first_message = False
         self.turn = False
+        self.shutdown = False
 
         self.vel_msg = Twist()
 
@@ -29,7 +30,8 @@ class Square(Node):
         self.yref = 0.0
         self.theta_zref = 0.0
 
-        self.displacement = 0.0
+        self.side_count = 0
+        self.loop_count = 0
 
         self.vel_pub = self.create_publisher(
             msg_type=Twist,
@@ -44,20 +46,18 @@ class Square(Node):
             qos_profile=10,
         )
 
-        ctrl_rate = 10  # Hz
+        ctrl_rate = 10
         self.timer = self.create_timer(
             timer_period_sec=1 / ctrl_rate,
             callback=self.timer_callback,
         )
-
-        self.shutdown = False
 
         self.get_logger().info(
             f"The '{self.get_name()}' node is initialised."
         )
 
     def on_shutdown(self):
-        print("Stopping the robot...")
+        self.get_logger().info("Stopping the robot...")
         self.vel_pub.publish(Twist())
         self.shutdown = True
 
@@ -68,7 +68,7 @@ class Square(Node):
 
         self.x = pose.position.x
         self.y = pose.position.y
-        self.theta_z = abs(yaw)
+        self.theta_z = yaw
 
         if not self.first_message:
             self.first_message = True
@@ -76,16 +76,34 @@ class Square(Node):
             self.yref = self.y
             self.theta_zref = self.theta_z
 
+    def angle_difference(self, current, reference):
+        diff = current - reference
+
+        while diff > pi:
+            diff -= 2 * pi
+
+        while diff < -pi:
+            diff += 2 * pi
+
+        return abs(diff)
+
     def timer_callback(self):
         if not self.first_message:
             return
 
-        self.displacement = sqrt(
+        if self.loop_count >= 2:
+            self.vel_msg.linear.x = 0.0
+            self.vel_msg.angular.z = 0.0
+            self.vel_pub.publish(self.vel_msg)
+            self.get_logger().info("Completed two square loops. Robot stopped.")
+            return
+
+        displacement = sqrt(
             pow(self.x - self.xref, 2) + pow(self.y - self.yref, 2)
         )
 
         if self.turn:
-            angle_turned = abs(self.theta_z - self.theta_zref)
+            angle_turned = self.angle_difference(self.theta_z, self.theta_zref)
 
             if angle_turned < pi / 2:
                 self.vel_msg.linear.x = 0.0
@@ -99,8 +117,17 @@ class Square(Node):
                 self.yref = self.y
                 self.theta_zref = self.theta_z
 
+                self.side_count += 1
+
+                if self.side_count == 4:
+                    self.side_count = 0
+                    self.loop_count += 1
+                    self.get_logger().info(
+                        f"Completed loop {self.loop_count}/2"
+                    )
+
         else:
-            if self.displacement < 1.0:
+            if displacement < 1.0:
                 self.vel_msg.linear.x = 0.1
                 self.vel_msg.angular.z = 0.0
             else:
