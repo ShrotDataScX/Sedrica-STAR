@@ -23,7 +23,8 @@ ament_python_install_package(${PROJECT_NAME}_modules)
 install(PROGRAMS
   scripts/basic_velocity_control.py
   scripts/stop_me.py
-   scripts/odom_subscriber.py
+  scripts/odom_subscriber.py
+  scripts/move_circle.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
