@@ -25,8 +25,15 @@
 - Documented notes for how to manage workspace and what are the common commands that we use while working in a project
 
     # Topics covered
-- Qauternions
+- Qauternions , with mathematics and intuition from 3Blue1Brown
 - Few examples from Tom's course
 - Got an overview of pipeline of what to follow while making a self driving car :)
 
     Didn't get much time today as I was doing assignment for Summer of Robotics which  was all related stuff and problems were mostly related to transformation        matrices and associated algebra.
+
+
+## Day 3,4,5 Collective Progress
+- The TF2 Transformation System
+- RViz: Visualising the Robot’s World
+- Workspace & Package Architecture
+>> Theoretically completed everything on fundamnetal level along with docummenting notes and got a good command on git

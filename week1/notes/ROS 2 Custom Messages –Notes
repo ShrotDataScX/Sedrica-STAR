@@ -1,0 +1,320 @@
+ROS 2 Custom Messages – Complete Notes
+What is a Message in ROS 2?
+
+A message is a data structure used by ROS 2 nodes to exchange information through a topic.
+
+Think of it like a parcel being delivered.
+
+Publisher ---> Topic ---> Subscriber
+Publisher = Sender
+Topic = Delivery route
+Message = Parcel containing data
+Subscriber = Receiver
+
+The message defines what data can be sent.
+
+Example: Standard String Message
+
+Earlier we used:
+
+from example_interfaces.msg import String
+
+The structure of this message is:
+
+string data
+
+This means the message contains only one field called data.
+
+Example:
+
+msg = String()
+msg.data = "Hello ROS2"
+
+The subscriber receives:
+
+topic_message.data
+Why Create a Custom Message?
+
+Suppose we want to send:
+
+"The ROS time is..."
+1781358432
+
+A standard String message cannot hold both values.
+
+We need our own message type.
+
+Creating a Custom Message
+Step 1: Create a msg Folder
+
+Navigate to the package root:
+
+cd ~/ros2_ws/src/part1_pubsub
+
+Create a message directory:
+
+mkdir msg
+Step 2: Create a Message File
+
+Create:
+
+touch msg/Example.msg
+Step 3: Define the Message
+
+Open:
+
+msg/Example.msg
+
+Add:
+
+string info
+int32 time
+
+This defines a new message type called:
+
+Example
+
+with two fields:
+
+Field	Type
+info	string
+time	int32
+Visual Representation
+Example Message
+├── info : string
+└── time : int32
+
+Example instance:
+
+msg = Example()
+
+msg.info = "The ROS time is..."
+msg.time = 1781358432
+Why Run Colcon Build?
+
+The file:
+
+Example.msg
+
+only describes the message.
+
+ROS must generate Python code from it.
+
+Running:
+
+colcon build
+
+creates the required Python classes automatically.
+
+Without building, this import will fail:
+
+from part1_pubsub.msg import Example
+Modifying CMakeLists.txt
+
+Add:
+
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Example.msg"
+)
+
+Place these before:
+
+ament_package()
+Modifying package.xml
+
+Add:
+
+<buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+<exec_depend>rosidl_default_runtime</exec_depend>
+
+<member_of_group>
+  rosidl_interface_packages
+</member_of_group>
+
+Place them above:
+
+<export>
+Build the Message
+
+From the workspace root:
+
+cd ~/ros2_ws
+
+Build:
+
+colcon build --packages-select part1_pubsub --symlink-install
+
+Source the workspace:
+
+source install/setup.bash
+
+or
+
+source ~/.bashrc
+
+(if already added there)
+
+Verify the Message
+
+List available messages:
+
+ros2 interface list -m
+
+You should find:
+
+part1_pubsub/msg/Example
+
+Display the structure:
+
+ros2 interface show part1_pubsub/msg/Example
+
+Output:
+
+string info
+int32 time
+Custom Publisher
+
+Import:
+
+from part1_pubsub.msg import Example
+
+Create the publisher:
+
+self.my_publisher = self.create_publisher(
+    msg_type=Example,
+    topic="my_topic",
+    qos_profile=10,
+)
+
+Create and fill the message:
+
+topic_msg = Example()
+
+topic_msg.info = "The ROS time is..."
+topic_msg.time = ros_time[0]
+
+Publish:
+
+self.my_publisher.publish(topic_msg)
+Custom Subscriber
+
+Import:
+
+from part1_pubsub.msg import Example
+
+Subscribe:
+
+self.my_subscriber = self.create_subscription(
+    msg_type=Example,
+    topic="my_topic",
+    callback=self.msg_callback,
+    qos_profile=10,
+)
+Callback Function
+
+Old String message:
+
+topic_message.data
+
+Custom message:
+
+topic_message.info
+topic_message.time
+
+Example:
+
+def msg_callback(self, topic_message):
+
+    self.get_logger().info(
+        f"Info: {topic_message.info}"
+    )
+
+    self.get_logger().info(
+        f"Time: {topic_message.time}"
+    )
+Why Did We Copy Publisher and Subscriber?
+
+We created:
+
+publisher.py
+subscriber.py
+
+using:
+
+example_interfaces/msg/String
+
+For Exercise 8 we create:
+
+custom_msg_publisher.py
+custom_msg_subscriber.py
+
+using:
+
+part1_pubsub/msg/Example
+
+This allows us to keep the old example while learning custom messages.
+
+Installing New Executables
+
+Add to CMakeLists.txt:
+
+install(PROGRAMS
+  scripts/basic_velocity_control.py
+  scripts/stop_me.py
+  scripts/publisher.py
+  scripts/subscriber.py
+  scripts/custom_msg_publisher.py
+  scripts/custom_msg_subscriber.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+Rebuild After Adding New Scripts
+colcon build --packages-select part1_pubsub --symlink-install
+
+Source:
+
+source install/setup.bash
+Running the Nodes
+
+Terminal 1:
+
+ros2 run part1_pubsub custom_msg_publisher.py
+
+Terminal 2:
+
+ros2 run part1_pubsub custom_msg_subscriber.py
+Key Concept to Remember
+Message = Structure of Data
+
+Topic = Communication Channel
+
+Publisher = Sends Messages
+
+Subscriber = Receives Messages
+
+For communication to work:
+
+Publisher and Subscriber
+must use the same Topic
+and the same Message Type.
+
+Example:
+
+Publisher
+    |
+    | Example Message
+    |
+ /my_topic
+    |
+    v
+Subscriber
+
+Message content:
+
+Example
+├── info = "The ROS time is..."
+└── time = 1781358432
+
+This is the foundation of communication in ROS 2 and is used everywhere—from robot velocity commands to camera images, LiDAR scans, GPS data, and navigation information.
