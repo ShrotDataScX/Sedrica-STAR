@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 
 from geometry_msgs.msg import Twist
 
@@ -10,6 +11,8 @@ class Circle(Node):
 
     def __init__(self):
         super().__init__("move_circle")
+
+        self.shutdown = False
 
         self.my_publisher = self.create_publisher(
             msg_type=Twist,
@@ -44,15 +47,36 @@ class Circle(Node):
             throttle_duration_sec=1,
         )
 
+    def on_shutdown(self):
+        self.get_logger().info("Stopping the robot...")
+        self.my_publisher.publish(Twist())
+        self.shutdown = True
+
 
 def main(args=None):
-    rclpy.init(args=args)
+    rclpy.init(
+        args=args,
+        signal_handler_options=SignalHandlerOptions.NO,
+    )
 
-    my_circle = Circle()
-    rclpy.spin(my_circle)
+    move_circle = Circle()
 
-    my_circle.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(move_circle)
+
+    except KeyboardInterrupt:
+        print(
+            f"{move_circle.get_name()} received a shutdown request (Ctrl+C)."
+        )
+
+    finally:
+        move_circle.on_shutdown()
+
+        while not move_circle.shutdown:
+            continue
+
+        move_circle.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
